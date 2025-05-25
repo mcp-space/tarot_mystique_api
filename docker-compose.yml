@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: tarot_postgres
+    environment:
+      POSTGRES_DB: tarot_mystique
+      POSTGRES_USER: tarot_user
+      POSTGRES_PASSWORD: mystical_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - tarot_network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: tarot_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - tarot_network
+
+  # NestJS API Server
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tarot_api
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://tarot_user:mystical_password@postgres:5432/tarot_mystique?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: mystical-jwt-secret-for-development
+      NODE_ENV: development
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - tarot_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  tarot_network:
+    driver: bridge
